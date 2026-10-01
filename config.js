@@ -36,7 +36,25 @@ export function parseEmpleado(raw) {
  * Normaliza el código PLEX (ej. etiqueta "M105") para buscarlo en la biblioteca:
  * quita espacios y los asteriscos de inicio/fin de Code 39, y pasa a mayúsculas.
  */
-export const normCodigo = (s) => String(s || '').replace(/[*\s]/g, '').toUpperCase()
+export const normCodigo = (s) =>
+  String(s || '')
+    .replace(/[\u0000-\u001F\u007F]/g, '')
+    .replace(/^\][A-Za-z][0-9]/, '') // prefijo AIM (ej. ]A0) que algunas pistolas agregan
+    .replace(/[*\s]/g, '')
+    .toUpperCase()
+
+/** Busca el código en el catálogo tolerando caracteres extra de la pistola. */
+export function buscarEnCatalogo(cat, raw) {
+  const base = normCodigo(raw)
+  const candidatos = [
+    base,
+    base.replace(/[^A-Z0-9]/g, ''), // sin guiones / símbolos
+  ]
+  for (const c of candidatos) {
+    if (c && cat.has(c)) return cat.get(c)
+  }
+  return null
+}
 
 /** Fecha YYYY-MM-DD en hora de México. */
 export function fechaMX(d = new Date()) {

@@ -57,6 +57,8 @@ h2 { font-size: 1.35rem; }
 .btn-detalle { font-size: .8rem; font-weight: 500; opacity: .8; margin-top: 2px; }
 .espacio-arriba { margin-top: 24px; }
 .espacio-izq { margin-left: 8px; }
+.ultima-lectura { margin: 4px 0 8px; font-size: .8rem; }
+.ultima-lectura code { background: var(--gris); padding: 1px 6px; border-radius: 4px; }
 .btn-chico { padding: 8px 12px; font-size: .9rem; }
 .btn-cuadro { width: 64px; height: 64px; font-size: 1.8rem; padding: 0; }
 .lista-botones { display: flex; flex-direction: column; gap: 12px; }

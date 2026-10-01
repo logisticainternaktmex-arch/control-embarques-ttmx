@@ -3,7 +3,7 @@ import ScanInput, { BotonManual } from './ScanInput'
 import { Header, Chip, Mensaje, Confirmar } from './UI'
 import { cargarCatalogo } from './supabase'
 import { enviar } from './offlineQueue'
-import { normCodigo, fmtTiempo, uuid, beep, horaMX } from './config'
+import { normCodigo, buscarEnCatalogo, fmtTiempo, uuid, beep, horaMX } from './config'
 
 // Catálogo en memoria: la búsqueda es instantánea y funciona sin red.
 let catalogo = null
@@ -24,6 +24,7 @@ export default function Escaneo({ st, setProgreso, onTerminar }) {
   const [error, setError] = useState('')
   const [estadoCat, setEstadoCat] = useState(catalogo ? 'ok' : 'cargando')
   const [confirmSalir, setConfirmSalir] = useState(false)
+  const [ultimaLeida, setUltimaLeida] = useState('')
   const ultimaLectura = useRef({ codigo: '', ts: 0 })
   // Copia síncrona del progreso: evita contar dos veces si llegan lecturas muy seguidas
   const progRef = useRef(prog)
@@ -50,12 +51,13 @@ export default function Escaneo({ st, setProgreso, onTerminar }) {
     // Evita doble lectura accidental del mismo código
     if (codigo === ultimaLectura.current.codigo && t - ultimaLectura.current.ts < 1500) return
     ultimaLectura.current = { codigo, ts: t }
+    setUltimaLeida(String(raw))
 
     let cat = catalogo
     if (!cat) {
       try { cat = await obtenerCatalogo(true); setEstadoCat('ok') } catch { cat = new Map() }
     }
-    const prod = cat.get(codigo)
+    const prod = buscarEnCatalogo(cat, raw)
     const prog = progRef.current
     const encontrado = !!prod
 
@@ -93,7 +95,7 @@ export default function Escaneo({ st, setProgreso, onTerminar }) {
 
     if (!encontrado) {
       beep(false)
-      setError(`Código no encontrado en la biblioteca: ${registro.codigo_leido}`)
+      setError(`Código no encontrado en la biblioteca: "${registro.codigo_leido}"`)
       return
     }
 
@@ -144,6 +146,7 @@ export default function Escaneo({ st, setProgreso, onTerminar }) {
       <div className="progreso"><div style={{ width: `${Math.min(100, (prog.consecutivo / total) * 100)}%` }} /></div>
 
       <main className="contenido">
+        {ultimaLeida && <p className="tenue ultima-lectura">Última lectura: <code>{JSON.stringify(ultimaLeida)}</code></p>}
         {estadoCat === 'cargando' && <p className="tenue">Cargando biblioteca de imágenes…</p>}
         <Mensaje>{estadoCat === 'error' ? 'No se pudo cargar la biblioteca. Revisa la conexión.' : ''}</Mensaje>
         <Mensaje>{error}</Mensaje>
