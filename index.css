@@ -112,6 +112,10 @@ h2 { font-size: 1.35rem; }
 .producto-tenue img { border-color: var(--rojo); opacity: .5; }
 .sin-imagen { height: 160px; display: flex; align-items: center; justify-content: center; background: var(--gris); border-radius: 12px; color: var(--tenue); }
 .producto-info { margin-top: 8px; }
+.producto-datos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 8px 0 4px; }
+.producto-datos > div { background: var(--gris); border-radius: 8px; padding: 6px 8px; display: flex; flex-direction: column; }
+.producto-datos .tenue { font-size: .72rem; }
+.producto-datos strong { font-size: 1.05rem; }
 
 /* Modales y overlay */
 .modal-fondo { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 20; }

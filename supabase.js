@@ -78,7 +78,7 @@ export async function cargarCatalogo() {
   for (let desde = 0; ; desde += pagina) {
     const { data, error } = await supabase
       .from('productos')
-      .select('codigo_plex, numero_parte, descripcion, imagen_url')
+      .select('codigo_plex, numero_parte, descripcion, sebango, imagen_url')
       .eq('activo', true)
       .range(desde, desde + pagina - 1)
     if (error) throw error

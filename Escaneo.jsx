@@ -25,6 +25,7 @@ export default function Escaneo({ st, setProgreso, onTerminar }) {
   const [estadoCat, setEstadoCat] = useState(catalogo ? 'ok' : 'cargando')
   const [confirmSalir, setConfirmSalir] = useState(false)
   const [ultimaLeida, setUltimaLeida] = useState('')
+  const [sinImagen, setSinImagen] = useState({})
   const ultimaLectura = useRef({ codigo: '', ts: 0 })
   // Copia síncrona del progreso: evita contar dos veces si llegan lecturas muy seguidas
   const progRef = useRef(prog)
@@ -78,6 +79,7 @@ export default function Escaneo({ st, setProgreso, onTerminar }) {
       kanbans_programados: total,
       codigo_leido: String(raw).trim(),
       numero_parte: prod?.numero_parte || null,
+      sebango: prod?.sebango || null,
       descripcion: prod?.descripcion || null,
       imagen_mostrada: !!prod?.imagen_url,
       resultado: encontrado ? 'encontrado' : 'no_encontrado',
@@ -103,7 +105,7 @@ export default function Escaneo({ st, setProgreso, onTerminar }) {
     setError('')
     const completado = consecutivo >= total
     const historial = [
-      { n: consecutivo, codigo: registro.codigo_leido, parte: prod.numero_parte, tiempo: registro.tiempo_desde_anterior, hora: registro.fecha_hora },
+      { n: consecutivo, codigo: prod.codigo_plex, parte: prod.numero_parte, sebango: prod.sebango, tiempo: registro.tiempo_desde_anterior, hora: registro.fecha_hora },
       ...(prog.historial || []),
     ].slice(0, 8)
 
@@ -159,13 +161,20 @@ export default function Escaneo({ st, setProgreso, onTerminar }) {
           </div>
         ) : (
           <div className={`producto ${error ? 'producto-tenue' : ''}`}>
-            {ult.imagen_url
-              ? <img src={ult.imagen_url} alt={ult.numero_parte || ''} />
-              : <div className="sin-imagen">Sin imagen registrada</div>}
-            <div className="producto-info">
-              <strong>{ult.numero_parte}</strong> {ult.descripcion && <span className="tenue">· {ult.descripcion}</span>}
-              <div className="tenue">PLEX: {ult.codigo_plex}</div>
+            {ult.imagen_url && !sinImagen[ult.codigo_plex]
+              ? <img
+                  key={ult.codigo_plex + prog.consecutivo}
+                  src={ult.imagen_url}
+                  alt={ult.numero_parte || ''}
+                  onError={() => setSinImagen((s) => ({ ...s, [ult.codigo_plex]: true }))}
+                />
+              : <div className="sin-imagen">Sin imagen registrada para {ult.codigo_plex}</div>}
+            <div className="producto-datos">
+              <div><span className="tenue">PLEX</span><strong>{ult.codigo_plex}</strong></div>
+              <div><span className="tenue">No. parte</span><strong>{ult.numero_parte || '—'}</strong></div>
+              <div><span className="tenue">Sebango</span><strong>{ult.sebango || '—'}</strong></div>
             </div>
+            {ult.descripcion && <div className="tenue">{ult.descripcion}</div>}
           </div>
         )}
 
@@ -173,7 +182,7 @@ export default function Escaneo({ st, setProgreso, onTerminar }) {
           <div className="lista lista-compacta">
             {prog.historial.map((h) => (
               <div key={h.n} className="renglon">
-                <span>#{h.n} · {h.parte || h.codigo}</span>
+                <span>#{h.n} · {h.codigo}{h.sebango ? ` · ${h.sebango}` : ''}</span>
                 <span className="tenue">{horaMX(h.hora)} · +{h.tiempo}</span>
               </div>
             ))}
