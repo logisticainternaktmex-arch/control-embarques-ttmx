@@ -1,0 +1,9 @@
+{
+  "name": "Control Embarques TTMX",
+  "short_name": "Embarques TTMX",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#3576ac"
+}
