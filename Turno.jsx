@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Header, Chip } from '../components/UI'
-import { TURNOS, HORARIOS } from '../config'
+import { Header, Chip } from './UI'
+import { TURNOS, HORARIOS } from './config'
 
 export default function Turno({ operador, onElegir, onSalir }) {
   const [turno, setTurno] = useState(null)

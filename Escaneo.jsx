@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import ScanInput, { BotonManual } from '../components/ScanInput'
-import { Header, Chip, Mensaje, Confirmar } from '../components/UI'
-import { cargarCatalogo } from '../services/supabase'
-import { enviar } from '../services/offlineQueue'
-import { normCodigo, fmtTiempo, uuid, beep, horaMX } from '../config'
+import ScanInput, { BotonManual } from './ScanInput'
+import { Header, Chip, Mensaje, Confirmar } from './UI'
+import { cargarCatalogo } from './supabase'
+import { enviar } from './offlineQueue'
+import { normCodigo, fmtTiempo, uuid, beep, horaMX } from './config'
 
 // Catálogo en memoria: la búsqueda es instantánea y funciona sin red.
 let catalogo = null

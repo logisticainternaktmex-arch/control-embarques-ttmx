@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
-import ScanInput, { BotonManual } from '../components/ScanInput'
-import { Header, Chip, Mensaje, Confirmar } from '../components/UI'
-import { buscarEmpleado, cargarTomas, liberarToma } from '../services/supabase'
-import { parseEmpleado, beep, horaMX, colorTurno } from '../config'
+import ScanInput, { BotonManual } from './ScanInput'
+import { Header, Chip, Mensaje, Confirmar } from './UI'
+import { buscarEmpleado, cargarTomas, liberarToma } from './supabase'
+import { parseEmpleado, beep, horaMX, colorTurno } from './config'
 
 export default function Supervisor({ st, onSalir }) {
   const [sup, setSup] = useState(null) // no se guarda: al recargar se vuelve a pedir

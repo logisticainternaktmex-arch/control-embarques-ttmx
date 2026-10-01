@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Header, Chip, Mensaje } from '../components/UI'
-import { MAX_KANBAN } from '../config'
+import { Header, Chip, Mensaje } from './UI'
+import { MAX_KANBAN } from './config'
 
 export default function Cantidad({ st, onConfirmar, onCancelar }) {
   const [valor, setValor] = useState('')

@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import ScanInput, { BotonManual } from '../components/ScanInput'
-import { Header, Mensaje } from '../components/UI'
-import { buscarEmpleado } from '../services/supabase'
-import { parseEmpleado, beep } from '../config'
+import ScanInput, { BotonManual } from './ScanInput'
+import { Header, Mensaje } from './UI'
+import { buscarEmpleado } from './supabase'
+import { parseEmpleado, beep } from './config'
 
 export default function Login({ onEntrar }) {
   const [error, setError] = useState('')

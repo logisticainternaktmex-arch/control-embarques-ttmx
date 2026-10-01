@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Header, Chip, Mensaje, Confirmar } from '../components/UI'
-import { cargarRutas, cargarTomas } from '../services/supabase'
-import { horaMX, colorTurno, fechaOperativa } from '../config'
+import { Header, Chip, Mensaje, Confirmar } from './UI'
+import { cargarRutas, cargarTomas } from './supabase'
+import { horaMX, colorTurno, fechaOperativa } from './config'
 
 export default function Rutas({ st, onElegir, onSupervisor, onCambiarPersonal, onCerrarSesion }) {
   const [rutas, setRutas] = useState([])

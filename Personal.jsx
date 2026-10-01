@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import ScanInput, { BotonManual } from '../components/ScanInput'
-import { Header, Chip, Mensaje } from '../components/UI'
-import { buscarEmpleado } from '../services/supabase'
-import { PUESTOS, parseEmpleado, beep, colorTurno } from '../config'
+import ScanInput, { BotonManual } from './ScanInput'
+import { Header, Chip, Mensaje } from './UI'
+import { buscarEmpleado } from './supabase'
+import { PUESTOS, parseEmpleado, beep, colorTurno } from './config'
 
 export default function Personal({ operador, turno, horario, inicial, onConfirmar, onAtras }) {
   const [personal, setPersonal] = useState(inicial || {})
