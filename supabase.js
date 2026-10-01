@@ -36,13 +36,12 @@ export async function cargarRutas() {
   return data
 }
 
-/** Tomas que bloquean rutas en la fecha y horario indicados */
-export async function cargarTomas(fecha, horario) {
+/** Rutas tomadas en la jornada actual (cada sesión nueva empieza con todas libres) */
+export async function cargarTomas(jornadaId) {
   const { data, error } = await supabase
     .from('tomas_ruta')
     .select('*')
-    .eq('fecha_operativa', fecha)
-    .eq('horario', horario)
+    .eq('jornada_id', jornadaId)
     .neq('estado', 'liberada')
     .order('inicio')
   if (error) throw error

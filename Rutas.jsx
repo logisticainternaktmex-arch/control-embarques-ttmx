@@ -12,7 +12,7 @@ export default function Rutas({ st, onElegir, onSupervisor, onCambiarPersonal, o
 
   const refrescar = useCallback(async () => {
     try {
-      const [r, t] = await Promise.all([cargarRutas(), cargarTomas(st.fecha, st.horario)])
+      const [r, t] = await Promise.all([cargarRutas(), cargarTomas(st.jornadaId)])
       // Solo las rutas del horario elegido (horarios vacío = aparece en todos)
       setRutas(r.filter((x) => !x.horarios?.length || x.horarios.includes(st.horario)))
       setTomas(t); setError('')
@@ -21,7 +21,7 @@ export default function Rutas({ st, onElegir, onSupervisor, onCambiarPersonal, o
     } finally {
       setCargando(false)
     }
-  }, [st.fecha, st.horario])
+  }, [st.jornadaId, st.horario])
 
   useEffect(() => {
     refrescar()
@@ -57,7 +57,7 @@ export default function Rutas({ st, onElegir, onSupervisor, onCambiarPersonal, o
                 <div className="ruta-nombre">{r.nombre}</div>
                 {t && (
                   <div className="ruta-info">
-                    {t.estado === 'completada' ? '✔ Lista' : '🔒 En uso'}
+                    {t.estado !== 'completada' ? '🔒 En uso' : t.cierre === 'incompleta' ? '⚠ Faltantes' : '✔ Lista'}
                     <br />{(t.operador_nombre || '').split(' ')[0]} {horaMX(t.inicio).slice(0, 5)}
                   </div>
                 )}

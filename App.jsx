@@ -8,12 +8,16 @@ import Cantidad from './Cantidad'
 import Escaneo from './Escaneo'
 import { crearSesion, tomarRuta } from './supabase'
 import { procesarCola, pendientes } from './offlineQueue'
-import { cargarEstado, guardarEstado, fechaOperativa } from './config'
+import { cargarEstado, guardarEstado, fechaOperativa, uuid } from './config'
 
 const INICIAL = { paso: 'login' }
 
 export default function App() {
-  const [st, setSt] = useState(() => cargarEstado() || INICIAL)
+  const [st, setSt] = useState(() => {
+    const s = cargarEstado() || INICIAL
+    // Sesiones guardadas antes de esta versión: les asigna su jornada
+    return s.paso !== 'login' && !s.jornadaId ? { ...s, jornadaId: uuid() } : s
+  })
   const [enCola, setEnCola] = useState(pendientes())
   const [online, setOnline] = useState(navigator.onLine)
 
@@ -43,7 +47,7 @@ export default function App() {
       pantalla = (
         <Turno
           operador={st.operador}
-          onElegir={({ turno, horario }) => ir({ turno, horario, paso: 'personal' })}
+          onElegir={({ turno, horario }) => ir({ turno, horario, jornadaId: uuid(), paso: 'personal' })}
           onSalir={() => setSt(INICIAL)}
         />
       )
@@ -99,6 +103,7 @@ export default function App() {
           onConfirmar={async (n) => {
             const t = await tomarRuta({
               sesion_id: st.sesionId,
+              jornada_id: st.jornadaId,
               fecha_operativa: st.fecha,
               turno: st.turno,
               horario: st.horario,
@@ -110,7 +115,7 @@ export default function App() {
             })
             ir({
               toma: { id: t.id, ruta_nombre: t.ruta_nombre, kanbans_programados: n, inicioLocal: Date.now() },
-              progreso: { consecutivo: 0, ultimoTs: null, historial: [], completado: false },
+              progreso: { consecutivo: 0, ultimoTs: null, historial: [], fase: 'escanear' },
               paso: 'escaneo',
             })
           }}

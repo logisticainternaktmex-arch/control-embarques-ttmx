@@ -27,6 +27,8 @@ function variantesImagen(url) {
 export default function Escaneo({ st, setProgreso, onTerminar }) {
   const { toma, personal, operador } = st
   const prog = st.progreso
+  // fase: escanear → verificar (¿pieza correcta?) → [incorrecta] → escanear … → final (¿terminaste?) → faltantes
+  const fase = prog.fase || 'escanear'
   const total = toma.kanbans_programados
   const [ahora, setAhora] = useState(Date.now())
   const [error, setError] = useState('')
@@ -39,25 +41,31 @@ export default function Escaneo({ st, setProgreso, onTerminar }) {
   const progRef = useRef(prog)
   progRef.current = prog
 
+  const actualizar = (nuevo) => {
+    progRef.current = { ...progRef.current, ...nuevo }
+    setProgreso(nuevo)
+  }
+
   useEffect(() => {
     obtenerCatalogo()
       .then(() => setEstadoCat('ok'))
       .catch(() => setEstadoCat(catalogo ? 'ok' : 'error'))
   }, [])
 
+  const detenido = !!prog.finTs
   useEffect(() => {
-    if (prog.completado) return
+    if (detenido) return
     const id = setInterval(() => setAhora(Date.now()), 1000)
     return () => clearInterval(id)
-  }, [prog.completado])
+  }, [detenido])
 
-  const transcurrido = ((prog.completado ? prog.finTs : ahora) - toma.inicioLocal) / 1000
+  const transcurrido = ((prog.finTs || ahora) - toma.inicioLocal) / 1000
 
   const leer = async (raw) => {
-    if (progRef.current.completado) return
+    if ((progRef.current.fase || 'escanear') !== 'escanear') return
     const codigo = normCodigo(raw)
     const t = Date.now()
-    // Evita doble lectura accidental del mismo código
+    // Evita doble lectura accidental del mismo código (rebote de la pistola)
     if (codigo === ultimaLectura.current.codigo && t - ultimaLectura.current.ts < 1500) return
     ultimaLectura.current = { codigo, ts: t }
     setUltimaLeida(String(raw))
@@ -68,6 +76,7 @@ export default function Escaneo({ st, setProgreso, onTerminar }) {
     }
     const prod = buscarEnCatalogo(cat, raw)
     const prog = progRef.current
+    if ((prog.fase || 'escanear') !== 'escanear') return
     const encontrado = !!prod
 
     const segInicio = (t - toma.inicioLocal) / 1000
@@ -101,9 +110,9 @@ export default function Escaneo({ st, setProgreso, onTerminar }) {
       pasillo2_numero: personal.pasillo2?.numero, pasillo2_nombre: personal.pasillo2?.nombre,
       welding_numero: personal.welding?.numero, welding_nombre: personal.welding?.nombre,
     }
-    enviar({ tipo: 'escaneo', data: registro })
 
     if (!encontrado) {
+      enviar({ tipo: 'escaneo', data: registro })
       beep(false)
       setError(`Código no encontrado en la biblioteca: "${registro.codigo_leido}"`)
       return
@@ -111,33 +120,53 @@ export default function Escaneo({ st, setProgreso, onTerminar }) {
 
     beep(true)
     setError('')
-    const completado = consecutivo >= total
+    // Muestra la imagen y pregunta si la pieza es correcta (el registro se guarda con la respuesta)
+    actualizar({ consecutivo, ultimoTs: t, ultimo: prod, fase: 'verificar', pendiente: registro })
+  }
+
+  const responderPieza = (correcta) => {
+    const prog = progRef.current
+    const reg = prog.pendiente
+    if (!reg) return
+    enviar({ tipo: 'escaneo', data: { ...reg, verificacion: correcta ? 'correcta' : 'incorrecta' } })
     const historial = [
-      { n: consecutivo, codigo: prod.codigo_plex, parte: prod.numero_parte, sebango: prod.sebango, tiempo: registro.tiempo_desde_anterior, hora: registro.fecha_hora },
+      { n: reg.consecutivo, codigo: prog.ultimo?.codigo_plex, sebango: reg.sebango, ok: correcta, tiempo: reg.tiempo_desde_anterior, hora: reg.fecha_hora },
       ...(prog.historial || []),
     ].slice(0, 8)
-
-    const nuevo = {
-      consecutivo,
-      ultimoTs: t,
-      ultimo: prod,
+    const esUltimo = reg.consecutivo >= total
+    if (!correcta) beep(false)
+    actualizar({
+      pendiente: null,
       historial,
-      completado,
-      finTs: completado ? t : null,
-    }
-    progRef.current = { ...prog, ...nuevo }
-    setProgreso(nuevo)
+      incorrectas: (prog.incorrectas || 0) + (correcta ? 0 : 1),
+      fase: !correcta ? 'incorrecta' : esUltimo ? 'final' : 'escanear',
+      finTs: esUltimo ? Date.now() : null,
+    })
+  }
 
-    if (completado) {
-      enviar({
-        tipo: 'toma',
-        id: toma.id,
-        data: { estado: 'completada', fin: new Date(t).toISOString(), kanbans_escaneados: consecutivo },
-      })
-    }
+  const continuarTrasIncorrecta = () => {
+    const prog = progRef.current
+    actualizar({ fase: prog.consecutivo >= total ? 'final' : 'escanear' })
+  }
+
+  const cerrarRuta = (completa) => {
+    const prog = progRef.current
+    enviar({
+      tipo: 'toma',
+      id: toma.id,
+      data: {
+        estado: 'completada',
+        cierre: completa ? 'completa' : 'incompleta',
+        fin: new Date(prog.finTs || Date.now()).toISOString(),
+        kanbans_escaneados: prog.consecutivo,
+      },
+    })
+    if (completa) onTerminar()
+    else actualizar({ fase: 'faltantes' })
   }
 
   const ult = prog.ultimo
+  const scanActivo = fase === 'escanear' && !confirmSalir
 
   return (
     <div className="pantalla">
@@ -168,7 +197,7 @@ export default function Escaneo({ st, setProgreso, onTerminar }) {
             <p className="tenue">Escanea el código de barras o QR de PLEX</p>
           </div>
         ) : (
-          <div className={`producto ${error ? 'producto-tenue' : ''}`}>
+          <div className={`producto ${error ? 'producto-tenue' : ''} ${fase === 'verificar' ? 'producto-verificar' : ''}`}>
             {(() => {
               const vars = variantesImagen(ult.imagen_url)
               const i = intentoImg[ult.codigo_plex] || 0
@@ -179,7 +208,7 @@ export default function Escaneo({ st, setProgreso, onTerminar }) {
                     alt=""
                     onError={() => setIntentoImg((s) => ({ ...s, [ult.codigo_plex]: i + 1 }))}
                   />
-                : <div className="sin-imagen">Sin imagen para {ult.codigo_plex}<br /><small>Sube {ult.codigo_plex}.jpg al bucket imagenes-ttmx</small></div>
+                : <div className="sin-imagen">Sin imagen para {ult.codigo_plex}<br /><small>Sube {ult.codigo_plex}.jpg al bucket de imágenes</small></div>
             })()}
             <div className="producto-datos">
               <div><span className="tenue">PLEX</span><strong>{ult.codigo_plex}</strong></div>
@@ -190,11 +219,15 @@ export default function Escaneo({ st, setProgreso, onTerminar }) {
           </div>
         )}
 
+        {fase === 'escanear' && ult && (
+          <p className="siguiente">🔫 Escanea el siguiente PLEX</p>
+        )}
+
         {!!prog.historial?.length && (
           <div className="lista lista-compacta">
             {prog.historial.map((h) => (
-              <div key={h.n} className="renglon">
-                <span>#{h.n} · {h.codigo}{h.sebango ? ` · ${h.sebango}` : ''}</span>
+              <div key={h.n} className={`renglon ${h.ok === false ? 'renglon-mal' : ''}`}>
+                <span>{h.ok === false ? '❌' : '✅'} #{h.n} · {h.codigo}{h.sebango ? ` · ${h.sebango}` : ''}</span>
                 <span className="tenue">{horaMX(h.hora)} · +{h.tiempo}</span>
               </div>
             ))}
@@ -203,11 +236,23 @@ export default function Escaneo({ st, setProgreso, onTerminar }) {
       </main>
 
       <footer className="pie">
-        <BotonManual onScan={leer} />
-        <button className="btn btn-gris" onClick={() => setConfirmSalir(true)}>Salir de la ruta</button>
+        {fase === 'verificar' ? (
+          <>
+            <div className="pregunta">¿La pieza es correcta con el PLEX?</div>
+            <div className="fila">
+              <button className="btn btn-rojo btn-grande" onClick={() => responderPieza(false)}>✖ NO</button>
+              <button className="btn btn-verde btn-grande" onClick={() => responderPieza(true)}>✔ SÍ</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <BotonManual onScan={leer} />
+            <button className="btn btn-gris" onClick={() => setConfirmSalir(true)}>Salir de la ruta</button>
+          </>
+        )}
       </footer>
 
-      <ScanInput onScan={leer} active={!prog.completado && !confirmSalir} />
+      <ScanInput onScan={leer} active={scanActivo} />
 
       {confirmSalir && (
         <Confirmar
@@ -220,13 +265,35 @@ export default function Escaneo({ st, setProgreso, onTerminar }) {
         />
       )}
 
-      {prog.completado && (
-        <div className="overlay-ok">
-          <div className="icono-grande">✅</div>
-          <h1>Ruta completada</h1>
-          <p>Ruta {toma.ruta_nombre} · {total} kanban</p>
-          <p className="numero-grande">⏱ {fmtTiempo(transcurrido)}</p>
-          <button className="btn btn-blanco btn-grande" onClick={onTerminar}>Volver a rutas</button>
+      {fase === 'incorrecta' && (
+        <div className="overlay overlay-rojo">
+          <div className="icono-grande">⚠️</div>
+          <h1>Pieza incorrecta</h1>
+          <p className="overlay-texto">Llama al TL o GL</p>
+          <button className="btn btn-blanco btn-grande" onClick={continuarTrasIncorrecta}>
+            {prog.consecutivo >= total ? 'Continuar' : 'Continuar al siguiente escaneo'}
+          </button>
+        </div>
+      )}
+
+      {fase === 'final' && (
+        <div className="overlay overlay-azul">
+          <div className="icono-grande">🏁</div>
+          <h1>¿Terminaste de escanear la ruta?</h1>
+          <p>Ruta {toma.ruta_nombre} · {prog.consecutivo} kanban · ⏱ {fmtTiempo(transcurrido)}</p>
+          <div className="fila overlay-botones">
+            <button className="btn btn-rojo btn-grande" onClick={() => cerrarRuta(false)}>NO</button>
+            <button className="btn btn-verde btn-grande" onClick={() => cerrarRuta(true)}>SÍ</button>
+          </div>
+        </div>
+      )}
+
+      {fase === 'faltantes' && (
+        <div className="overlay overlay-amarillo">
+          <div className="icono-grande">📦</div>
+          <h1>Te faltaron cajas por escanear</h1>
+          <p className="overlay-texto">Avisa a tu supervisor</p>
+          <button className="btn btn-blanco btn-grande" onClick={onTerminar}>Entendido, volver a rutas</button>
         </div>
       )}
     </div>

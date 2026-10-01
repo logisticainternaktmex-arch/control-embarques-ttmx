@@ -34,11 +34,11 @@ export default function Supervisor({ st, onSalir }) {
 
   const refrescar = useCallback(async () => {
     try {
-      setTomas(await cargarTomas(st.fecha, st.horario))
+      setTomas(await cargarTomas(st.jornadaId))
     } catch {
       setError('Sin conexión. No se pudieron cargar las rutas.')
     }
-  }, [st.fecha, st.horario])
+  }, [st.jornadaId])
 
   useEffect(() => { if (sup) refrescar() }, [sup, refrescar])
 
@@ -89,7 +89,7 @@ export default function Supervisor({ st, onSalir }) {
               <div>
                 <div className="renglon-titulo">🔒 Ruta {t.ruta_nombre}</div>
                 <div className="tenue">
-                  {t.estado === 'completada' ? 'Completada' : 'En proceso'} · {t.operador_nombre} · {horaMX(t.inicio)}
+                  {t.estado !== 'completada' ? 'En proceso' : t.cierre === 'incompleta' ? '⚠ Faltaron cajas' : 'Completada'} · {t.operador_nombre} · {horaMX(t.inicio)}
                   <br />Kanbans: {t.estado === 'completada' ? t.kanbans_escaneados : '…'} / {t.kanbans_programados}
                 </div>
               </div>

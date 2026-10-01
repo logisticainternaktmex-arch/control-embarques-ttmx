@@ -121,6 +121,21 @@ h2 { font-size: 1.35rem; }
 .modal-fondo { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 20; }
 .modal { background: #fff; border-radius: 14px; padding: 20px; width: 100%; max-width: 420px; }
 .modal p { color: var(--tenue); }
+.overlay { position: fixed; inset: 0; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; z-index: 30; }
+.overlay h1 { font-size: 1.7rem; }
+.overlay .btn { margin-top: 16px; width: 100%; max-width: 360px; }
+.overlay-texto { font-size: 1.6rem; font-weight: 800; margin: 4px 0 8px; }
+.overlay-botones { width: 100%; max-width: 360px; }
+.overlay-botones .btn { margin-top: 16px; }
+.overlay-rojo { background: var(--rojo); }
+.overlay-azul { background: var(--azul); }
+.overlay-amarillo { background: #b26a00; }
+.overlay-rojo .btn-blanco { color: var(--rojo); }
+.overlay-amarillo .btn-blanco { color: #b26a00; }
+.pregunta { font-size: 1.15rem; font-weight: 800; text-align: center; color: var(--azul-osc); }
+.producto-verificar img { border-color: var(--azul); }
+.siguiente { text-align: center; font-weight: 700; color: var(--azul); margin: 8px 0; }
+.renglon-mal { border-color: #f5c2bd; background: #fdecea; }
 .overlay-ok { position: fixed; inset: 0; background: var(--verde); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; z-index: 30; }
 .overlay-ok .btn { margin-top: 16px; width: 100%; max-width: 360px; }
 
