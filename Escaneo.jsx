@@ -16,6 +16,14 @@ async function obtenerCatalogo(forzar = false) {
   return catalogo
 }
 
+// Si la foto no carga, prueba otras extensiones comunes antes de rendirse
+const EXTENSIONES = ['.jpg', '.png', '.jpeg', '.JPG', '.PNG', '.JPEG', '.webp']
+function variantesImagen(url) {
+  if (!url) return []
+  const base = url.replace(/\.(jpe?g|png|webp)$/i, '')
+  return [url, ...EXTENSIONES.map((e) => base + e).filter((u) => u !== url)]
+}
+
 export default function Escaneo({ st, setProgreso, onTerminar }) {
   const { toma, personal, operador } = st
   const prog = st.progreso
@@ -25,7 +33,7 @@ export default function Escaneo({ st, setProgreso, onTerminar }) {
   const [estadoCat, setEstadoCat] = useState(catalogo ? 'ok' : 'cargando')
   const [confirmSalir, setConfirmSalir] = useState(false)
   const [ultimaLeida, setUltimaLeida] = useState('')
-  const [sinImagen, setSinImagen] = useState({})
+  const [intentoImg, setIntentoImg] = useState({}) // código → índice de variante que se está probando
   const ultimaLectura = useRef({ codigo: '', ts: 0 })
   // Copia síncrona del progreso: evita contar dos veces si llegan lecturas muy seguidas
   const progRef = useRef(prog)
@@ -161,14 +169,18 @@ export default function Escaneo({ st, setProgreso, onTerminar }) {
           </div>
         ) : (
           <div className={`producto ${error ? 'producto-tenue' : ''}`}>
-            {ult.imagen_url && !sinImagen[ult.codigo_plex]
-              ? <img
-                  key={ult.codigo_plex + prog.consecutivo}
-                  src={ult.imagen_url}
-                  alt={ult.numero_parte || ''}
-                  onError={() => setSinImagen((s) => ({ ...s, [ult.codigo_plex]: true }))}
-                />
-              : <div className="sin-imagen">Sin imagen registrada para {ult.codigo_plex}</div>}
+            {(() => {
+              const vars = variantesImagen(ult.imagen_url)
+              const i = intentoImg[ult.codigo_plex] || 0
+              return i < vars.length
+                ? <img
+                    key={vars[i]}
+                    src={vars[i]}
+                    alt=""
+                    onError={() => setIntentoImg((s) => ({ ...s, [ult.codigo_plex]: i + 1 }))}
+                  />
+                : <div className="sin-imagen">Sin imagen para {ult.codigo_plex}<br /><small>Sube {ult.codigo_plex}.jpg al bucket imagenes-ttmx</small></div>
+            })()}
             <div className="producto-datos">
               <div><span className="tenue">PLEX</span><strong>{ult.codigo_plex}</strong></div>
               <div><span className="tenue">No. parte</span><strong>{ult.numero_parte || '—'}</strong></div>
